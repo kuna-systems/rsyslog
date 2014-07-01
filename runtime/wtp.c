@@ -242,6 +242,7 @@ wtpShutdownAll(wtp_t *pThis, wtpState_t tShutdownCmd, struct timespec *ptTimeout
 
 	/* wait for worker thread termination */
 	d_pthread_mutex_lock(&pThis->mutWtp);
+dbgprintf("%s: wtpShutdownAll: lock mutWtp\n", wtpGetDbgHdr(pThis));
 	pthread_cleanup_push(mutexCancelCleanup, &pThis->mutWtp);
 	bTimedOut = 0;
 	while(pThis->iCurNumWrkThrd > 0 && !bTimedOut) {
@@ -249,6 +250,7 @@ wtpShutdownAll(wtp_t *pThis, wtpState_t tShutdownCmd, struct timespec *ptTimeout
 			   wtpGetDbgHdr(pThis), timeoutVal(ptTimeout),
 			   ATOMIC_FETCH_32BIT(&pThis->iCurNumWrkThrd, &pThis->mutCurNumWrkThrd));
 
+dbgprintf("%s: wtpShutdownAll: cond_wait mutWtp\n", wtpGetDbgHdr(pThis));
 		if(d_pthread_cond_timedwait(&pThis->condThrdTrm, &pThis->mutWtp, ptTimeout) != 0) {
 			DBGPRINTF("%s: timeout waiting on worker thread termination\n", wtpGetDbgHdr(pThis));
 			bTimedOut = 1;	/* we exit the loop on timeout */
@@ -260,6 +262,7 @@ wtpShutdownAll(wtp_t *pThis, wtpState_t tShutdownCmd, struct timespec *ptTimeout
 		}
 
 	}
+dbgprintf("%s: wtpShutdownAll: unlock mutWtp (via cancelClenup)\n", wtpGetDbgHdr(pThis));
 	pthread_cleanup_pop(1);
 
 	if(bTimedOut)
@@ -413,6 +416,7 @@ wtpStartWrkr(wtp_t *pThis)
 	ISOBJ_TYPE_assert(pThis, wtp);
 
 	d_pthread_mutex_lock(&pThis->mutWtp);
+dbgprintf("%s: wtpStartWrkr: lock mutWtp\n", wtpGetDbgHdr(pThis));
 
 	/* find free spot in thread table. */
 	for(i = 0 ; i < pThis->iNumWorkerThreads ; ++i) {
@@ -438,6 +442,7 @@ wtpStartWrkr(wtp_t *pThis)
 		  ATOMIC_FETCH_32BIT(&pThis->iCurNumWrkThrd, &pThis->mutCurNumWrkThrd));
 
 finalize_it:
+dbgprintf("%s: wtpStartWrkr: unlock mutWtp\n", wtpGetDbgHdr(pThis));
 	d_pthread_mutex_unlock(&pThis->mutWtp);
 	RETiRet;
 }
