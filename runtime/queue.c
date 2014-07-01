@@ -1658,6 +1658,7 @@ DequeueConsumableElements(qqueue_t *pThis, wti_t *pWti, int *piRemainingQueueSiz
 	pWti->batch.nElemDeq = nDequeued + nDiscarded;
 	pWti->batch.deqID = getNextDeqID(pThis);
 	*piRemainingQueueSize = iQueueSize;
+	DBGOPRINT((obj_t*) pThis, "dequeued %d elements for consumer\n", nDequeued);
 finalize_it:
 	RETiRet;
 }
