@@ -493,10 +493,14 @@ InitDA(qqueue_t *pThis, int bLockMutex)
 	CHKiRet(wtpConstructFinalize	(pThis->pWtpDA));
 	/* if we reach this point, we have a "good" DA worker pool */
 
+	DBGOPRINT((obj_t*) pThis, "initiated DA worker pool, next trying to start DA queue\n");
+
 	/* now construct the actual queue (if it does not already exist) */
 	if(pThis->pqDA == NULL) {
 		CHKiRet(StartDA(pThis));
 	}
+
+	DBGOPRINT((obj_t*) pThis, "DA queue started.\n");
 
 finalize_it:
 	END_MTX_PROTECTED_OPERATIONS(pThis->mut);
@@ -1941,6 +1945,7 @@ ConsumerDA(qqueue_t *pThis, wti_t *pWti)
 
 	/* iterate over returned results and enqueue them in DA queue */
 	for(i = 0 ; i < pWti->batch.nElem && !pThis->bShutdownImmediate ; i++) {
+		DBGOPRINT((obj_t*) pThis, "shuffling msg %d to DA queue.\n", i);
 		iRet = qqueueEnqMsg(pThis->pqDA, eFLOWCTL_NO_DELAY, MsgAddRef(pWti->batch.pElem[i].pMsg));
 		if(iRet != RS_RET_OK) {
 			if(iRet == RS_RET_ERR_QUEUE_EMERGENCY) {
@@ -2002,8 +2007,8 @@ qqueueChkStopWrkrDA(qqueue_t *pThis)
 {
 	DEFiRet;
 
-	/*DBGPRINTF("XXXX: chkStopWrkrDA called, low watermark %d, log Size %d, phys Size %d, bEnqOnly %d\n",
-	pThis->iLowWtrMrk, getLogicalQueueSize(pThis), getPhysicalQueueSize(pThis), pThis->bEnqOnly);*/
+	DBGOPRINT((obj_t*) pThis, "chkStopWrkrDA called, low watermark %d, log Size %d, phys Size %d, bEnqOnly %d\n",
+	pThis->iLowWtrMrk, getLogicalQueueSize(pThis), getPhysicalQueueSize(pThis), pThis->bEnqOnly);
 	if(pThis->bEnqOnly) {
 		iRet = RS_RET_TERMINATE_WHEN_IDLE;
 	}

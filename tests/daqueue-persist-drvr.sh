@@ -24,6 +24,7 @@ source $srcdir/diag.sh check-mainq-spool
 
 echo "Enter phase 2, rsyslogd restart"
 
+echo TODO: permit duplicates
 exit
 
 # restart engine and have rest processed
