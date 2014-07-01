@@ -264,6 +264,7 @@ wtpShutdownAll(wtp_t *pThis, wtpState_t tShutdownCmd, struct timespec *ptTimeout
 
 	if(bTimedOut)
 		iRet = RS_RET_TIMED_OUT;
+	DBGPRINTF("%s: all workers terminated, bTimedOut=%d\n", wtpGetDbgHdr(pThis), bTimedOut);
 	
 	RETiRet;
 }
