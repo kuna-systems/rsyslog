@@ -1870,9 +1870,6 @@ addAction(action_t **ppAction, modInfo_t *pMod, void *pModData,
 	  struct nvlst *lst, int bSuspended)
 {
 	DEFiRet;
-	int i;
-	int iTplOpts;
-	uchar *pTplName;
 	action_t *pAction;
 	char errMsg[512];
 
@@ -1910,34 +1907,14 @@ addAction(action_t **ppAction, modInfo_t *pMod, void *pModData,
 	 * the discard action, which does not require a string. -- rgerhards, 2007-07-30
 	 */
 	if(pAction->iNumTpls > 0) {
-		/* we first need to create the template pointer array */
-		CHKmalloc(pAction->ppTpl = (struct template **)calloc(pAction->iNumTpls, sizeof(struct template *)));
-	}
-	
-	for(i = 0 ; i < pAction->iNumTpls ; ++i) {
-		CHKiRet(OMSRgetEntry(pOMSR, i, &pTplName, &iTplOpts));
-		/* Ok, we got everything, so it now is time to look up the template
-		 * (Hint: templates MUST be defined before they are used!)
-		 */
-		if(   !(iTplOpts & OMSR_TPL_AS_MSG)
-		   && (pAction->ppTpl[i] =
-		   	tplFind(ourConf, (char*)pTplName, strlen((char*)pTplName))) == NULL) {
-			snprintf(errMsg, sizeof(errMsg) / sizeof(char),
-				 " Could not find template '%s' - action disabled",
-				 pTplName);
-			errno = 0;
-			errmsg.LogError(0, RS_RET_NOT_FOUND, "%s", errMsg);
-			ABORT_FINALIZE(RS_RET_NOT_FOUND);
-		}
-		/* check required template options */
-		if(   (iTplOpts & OMSR_RQD_TPL_OPT_SQL)
-		   && (pAction->ppTpl[i]->optFormatEscape == 0)) {
-			errno = 0;
-			errmsg.LogError(0, RS_RET_RQD_TPLOPT_MISSING, "Action disabled. To use this action, you have to specify "
-				"the SQL or stdSQL option in your template!\n");
-			ABORT_FINALIZE(RS_RET_RQD_TPLOPT_MISSING);
-		}
+		int iTplOpts;
+		uchar *pTplName;
 
+		CHKiRet(OMSRgetEntry(pOMSR, 0, &pTplName, &iTplOpts));
+		/* TODO: eParamPassing can be set incorrectly if there are conflicting
+		 * iTplOpts. The code in prepareDoActionParams() and elsewhere expects
+		 * all templates in an action to have the same OMSR_TPL_AS_* type.
+		 */
 		/* set parameter-passing mode */
 		if(iTplOpts & OMSR_TPL_AS_ARRAY) {
 			pAction->eParamPassing = ACT_ARRAY_PASSING;
@@ -1949,7 +1926,40 @@ addAction(action_t **ppAction, modInfo_t *pMod, void *pModData,
 			pAction->eParamPassing = ACT_STRING_PASSING;
 		}
 
-		DBGPRINTF("template: '%s' assigned\n", pTplName);
+		if(pAction->eParamPassing != ACT_MSG_PASSING) {
+			int i;
+
+			/* we first need to create the template pointer array */
+			CHKmalloc(pAction->ppTpl = (struct template **)calloc(pAction->iNumTpls, sizeof(struct template *)));
+
+			for(i = 0 ; i < pAction->iNumTpls ; ++i) {
+				CHKiRet(OMSRgetEntry(pOMSR, i, &pTplName, &iTplOpts));
+
+				/* Ok, we got everything, so it now is time to look up the template
+				 * (Hint: templates MUST be defined before they are used!)
+				 */
+				if((pAction->ppTpl[i] = tplFind(ourConf, (char*)pTplName,
+					strlen((char*)pTplName))) == NULL) {
+					snprintf(errMsg, sizeof(errMsg) / sizeof(char),
+						 " Could not find template '%s' - action disabled",
+						 pTplName);
+					errno = 0;
+					errmsg.LogError(0, RS_RET_NOT_FOUND, "%s", errMsg);
+					ABORT_FINALIZE(RS_RET_NOT_FOUND);
+				}
+				/* check required template options */
+				if(   (iTplOpts & OMSR_RQD_TPL_OPT_SQL)
+				      && (pAction->ppTpl[i]->optFormatEscape == 0)) {
+					errno = 0;
+					errmsg.LogError(0, RS_RET_RQD_TPLOPT_MISSING,
+						"Action disabled. To use this action, you have to specify "
+						"the SQL or stdSQL option in your template!\n");
+					ABORT_FINALIZE(RS_RET_RQD_TPLOPT_MISSING);
+				}
+
+				DBGPRINTF("template: '%s' assigned\n", pTplName);
+			}
+		}
 	}
 
 	/* check if the module is compatible with select features (currently no such features exist) */
