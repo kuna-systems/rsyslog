@@ -17,7 +17,7 @@
  * pipes. These have been moved to ompipe, to reduced the entanglement
  * between the two different functionalities. -- rgerhards
  *
- * Copyright 2007-2013 Adiscon GmbH.
+ * Copyright 2007-2014 Adiscon GmbH.
  *
  * This file is part of rsyslog.
  *
@@ -1036,6 +1036,7 @@ setupInstStatsCtrs(instanceData *pData)
 	ctrName[sizeof(ctrName)-1] = '\0'; /* be on the save side */
 	CHKiRet(statsobj.Construct(&(pData->stats)));
 	CHKiRet(statsobj.SetName(pData->stats, ctrName));
+	CHKiRet(statsobj.SetOrigin(pData->stats, (uchar*)"omfile"));
 	STATSCOUNTER_INIT(pData->ctrRequests, pData->mutCtrRequests);
 	CHKiRet(statsobj.AddCounter(pData->stats, UCHAR_CONSTANT("requests"),
 		ctrType_IntCtr, CTR_FLAG_RESETTABLE, &(pData->ctrRequests)));
